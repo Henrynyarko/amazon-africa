@@ -1,0 +1,7 @@
+Run dotnet test
+  dotnet test
+  shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+  env:
+    DOTNET_ROOT: C:\Program Files\dotnet
+D:\a\amazon-africa\amazon-africa\AmazonAfrica.sln : Solution file error MSB5010: No file format header found.
+Error: Process completed with exit code 1.
