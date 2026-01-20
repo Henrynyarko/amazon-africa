@@ -1,7 +1,34 @@
-Run dotnet test
-  dotnet test
-  shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
-  env:
-    DOTNET_ROOT: C:\Program Files\dotnet
-D:\a\amazon-africa\amazon-africa\AmazonAfrica.sln : Solution file error MSB5010: No file format header found.
-Error: Process completed with exit code 1.
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{6FF857DA-3622-4D30-8FDE-08FC817089D3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AmazonAfrica.Api", "src\AmazonAfrica.Api\AmazonAfrica.Api.csproj", "{6089A7E3-CC1F-4058-93C2-40960ADEE520}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharedKernel.Tests", "src\SharedKernel.Tests\SharedKernel.Tests.csproj", "{6356A2BC-A800-4B3E-8F7B-A88C619B777A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6089A7E3-CC1F-4058-93C2-40960ADEE520}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6089A7E3-CC1F-4058-93C2-40960ADEE520}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6089A7E3-CC1F-4058-93C2-40960ADEE520}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6089A7E3-CC1F-4058-93C2-40960ADEE520}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6356A2BC-A800-4B3E-8F7B-A88C619B777A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6356A2BC-A800-4B3E-8F7B-A88C619B777A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6356A2BC-A800-4B3E-8F7B-A88C619B777A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6356A2BC-A800-4B3E-8F7B-A88C619B777A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{6089A7E3-CC1F-4058-93C2-40960ADEE520} = {6FF857DA-3622-4D30-8FDE-08FC817089D3}
+		{6356A2BC-A800-4B3E-8F7B-A88C619B777A} = {6FF857DA-3622-4D30-8FDE-08FC817089D3}
+	EndGlobalSection
+EndGlobal
