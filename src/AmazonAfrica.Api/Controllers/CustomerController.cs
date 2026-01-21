@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using System.Collections.Generic;
+using AmazonAfrica.Api.Data;  // Your DbContext
+using AmazonAfrica.Api.Models; // Customer model
+using Microsoft.EntityFrameworkCore;
 
 namespace AmazonAfrica.Modules.Customer.Controllers
 {
@@ -7,30 +9,28 @@ namespace AmazonAfrica.Modules.Customer.Controllers
     [Route("api/[controller]")]
     public class CustomerController : ControllerBase
     {
-        private static readonly List<CustomerDto> Customers = new List<CustomerDto>
+        private readonly AppDbContext _context;
+
+        public CustomerController(AppDbContext context)
         {
-            new CustomerDto { Id = 1, Name = "Kwame Mensah", Email = "kwame@ghanafarmers.com", LoyaltyPoints = 250 },
-            new CustomerDto { Id = 2, Name = "Thabo Nkosi", Email = "thabo@safarmers.com", LoyaltyPoints = 500 },
-            new CustomerDto { Id = 3, Name = "Amina Toure", Email = "amina@togofarmers.com", LoyaltyPoints = 120 }
-        };
+            _context = context;
+        }
 
         [HttpGet]
-        public IActionResult GetAllCustomers() => Ok(Customers);
+        public async Task<IActionResult> GetAllCustomers()
+        {
+            var customers = await _context.Customers.ToListAsync();
+            return Ok(customers);
+        }
 
         [HttpGet("{id}")]
-        public IActionResult GetCustomerById(int id)
+        public async Task<IActionResult> GetCustomerById(int id)
         {
-            var customer = Customers.Find(c => c.Id == id);
-            if (customer == null) return NotFound(new { message = "Customer not found" });
+            var customer = await _context.Customers.FindAsync(id);
+            if (customer == null)
+                return NotFound(new { message = "Customer not found" });
+
             return Ok(customer);
         }
-    }
-
-    public class CustomerDto
-    {
-        public int Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
-        public int LoyaltyPoints { get; set; }
     }
 }
