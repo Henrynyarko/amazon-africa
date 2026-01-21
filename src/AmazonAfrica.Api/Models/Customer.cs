@@ -1,14 +1,10 @@
-using Microsoft.EntityFrameworkCore;
-using AmazonAfrica.Api.Models;
-
-namespace AmazonAfrica.Api.Data
+namespace AmazonAfrica.Api.Models
 {
-    public class AppDbContext : DbContext
+    public class Customer
     {
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) {}
-
-        public DbSet<Customer> Customers { get; set; }
-        public DbSet<Order> Orders { get; set; }
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public string Email { get; set; }
+        public int LoyaltyPoints { get; set; }
     }
 }
-
