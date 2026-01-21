@@ -33,3 +33,4 @@
 /Users/user/Documents/Devops-Projects/amazon-africa/src/AmazonAfrica.Api/obj/Debug/net8.0/AmazonAfrica.Api.pdb
 /Users/user/Documents/Devops-Projects/amazon-africa/src/AmazonAfrica.Api/obj/Debug/net8.0/AmazonAfrica.Api.genruntimeconfig.cache
 /Users/user/Documents/Devops-Projects/amazon-africa/src/AmazonAfrica.Api/obj/Debug/net8.0/ref/AmazonAfrica.Api.dll
+/Users/user/Documents/Devops-Projects/amazon-africa/src/AmazonAfrica.Api/obj/Debug/net8.0/AmazonAfrica.Api.sourcelink.json

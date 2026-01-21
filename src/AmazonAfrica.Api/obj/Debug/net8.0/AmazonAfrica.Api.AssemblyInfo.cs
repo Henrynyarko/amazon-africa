@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("AmazonAfrica.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4e5cc924e745ea8b3c48083ab937fff424b403d6")]
 [assembly: System.Reflection.AssemblyProductAttribute("AmazonAfrica.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("AmazonAfrica.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

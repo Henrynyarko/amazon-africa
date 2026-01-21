@@ -1,3 +1,70 @@
+# name: Build & Deploy AmazonAfrica.API - Dev
+
+# on:
+#   push:
+#     branches:
+#       - qa
+#   workflow_dispatch:
+
+# jobs:
+#   build:
+#     runs-on: windows-latest
+#     permissions:
+#       contents: read
+
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
+
+#       - name: Set up .NET
+#         uses: actions/setup-dotnet@v4
+#         with:
+#           dotnet-version: '8.0'
+
+#       - name: Restore dependencies
+#         run: dotnet restore AmazonAfrica.sln
+
+#       - name: Run unit tests
+#         run: dotnet test AmazonAfrica.sln --no-restore --verbosity normal
+
+#       - name: Build solution
+#         run: dotnet build AmazonAfrica.sln --configuration Release --no-restore
+
+#       - name: Publish API
+#         run: dotnet publish src/AmazonAfrica.Api/AmazonAfrica.Api.csproj -c Release -o ./publish
+
+#       - name: Upload build artifact
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: amazonafrica-api
+#           path: ./publish
+
+#   deploy:
+#     runs-on: windows-latest
+#     needs: build
+#     environment:
+#       name: dev
+#     permissions:
+#       contents: read
+
+#     steps:
+#       - name: Download artifact
+#         uses: actions/download-artifact@v4
+#         with:
+#           name: amazonafrica-api
+
+#       - name: Azure Login (Service Principal)
+#         uses: azure/login@v2
+#         with:
+#           creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+#       - name: Deploy to Azure Web App (Dev Slot)
+#         uses: azure/webapps-deploy@v3
+#         with:
+#           app-name: amazonafrica-api
+#           slot-name: qa
+#           package: .
+
 name: Build & Deploy AmazonAfrica.API - Dev
 
 on:
@@ -15,6 +82,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up .NET
         uses: actions/setup-dotnet@v4
@@ -22,13 +91,13 @@ jobs:
           dotnet-version: '8.0'
 
       - name: Restore dependencies
-        run: dotnet restore AmazonAfrica.sln
+        run: dotnet restore src/AmazonAfrica.sln
 
       - name: Run unit tests
-        run: dotnet test AmazonAfrica.sln --no-restore --verbosity normal
+        run: dotnet test src/AmazonAfrica.sln --no-restore --verbosity normal
 
       - name: Build solution
-        run: dotnet build AmazonAfrica.sln --configuration Release --no-restore
+        run: dotnet build src/AmazonAfrica.sln --configuration Release --no-restore
 
       - name: Publish API
         run: dotnet publish src/AmazonAfrica.Api/AmazonAfrica.Api.csproj -c Release -o ./publish
@@ -63,4 +132,4 @@ jobs:
         with:
           app-name: amazonafrica-api
           slot-name: qa
-          package: .
+          package: ./publish
