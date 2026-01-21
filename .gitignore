@@ -1,0 +1,14 @@
+# .NET build folders
+bin/
+obj/
+
+# User-specific files
+*.user
+*.suo
+*.vs
+
+# Mac system files
+*.DS_Store
+
+# NuGet packages
+*.nupkg

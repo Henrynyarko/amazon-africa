@@ -1,4 +1,4 @@
-name: Build & Deploy AmazonAfrica.API - QA
+name: Build & Deploy AmazonAfrica.API - Dev
 
 on:
   push:
@@ -13,45 +13,54 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up .NET Core
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0'
+
+      - name: Restore dependencies
+        run: dotnet restore AmazonAfrica.sln
+
       - name: Run unit tests
-        run: dotnet test
-      - name: Build project
-        run: dotnet build --configuration Release
-      - name: Publish project
-        run: dotnet publish -c Release -o "${{env.DOTNET_ROOT}}/myapp"
-      - name: Upload artifact
+        run: dotnet test AmazonAfrica.sln --no-restore --verbosity normal
+
+      - name: Build solution
+        run: dotnet build AmazonAfrica.sln --configuration Release --no-restore
+
+      - name: Publish API
+        run: dotnet publish src/AmazonAfrica.Api/AmazonAfrica.Api.csproj -c Release -o ./publish
+
+      - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: .net-app
-          path: ${{env.DOTNET_ROOT}}/myapp
+          name: amazonafrica-api
+          path: ./publish
 
   deploy:
     runs-on: windows-latest
     needs: build
     environment:
-      name: 'qa'
+      name: dev
     permissions:
-      id-token: write
       contents: read
 
     steps:
-      - uses: actions/download-artifact@v4
+      - name: Download artifact
+        uses: actions/download-artifact@v4
         with:
-          name: .net-app
-      - uses: azure/login@v2
+          name: amazonafrica-api
+
+      - name: Azure Login (Service Principal)
+        uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
-      - name: Deploy to Azure Web App (QA Slot)
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy to Azure Web App (Dev Slot)
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'amazonafrica-api'
-          slot-name: 'qa'
+          app-name: amazonafrica-api
+          slot-name: qa
           package: .
