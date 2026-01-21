@@ -127,7 +127,7 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Deploy to Azure Web App (Dev Slot)
+      - name: Deploy to Azure Web App (qa Slot)
         uses: azure/webapps-deploy@v3
         with:
           app-name: amazonafrica-api
