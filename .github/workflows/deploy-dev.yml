@@ -8,51 +8,58 @@ on:
 
 jobs:
   build:
+    name: Build & Test
     runs-on: windows-latest
     permissions:
       contents: read
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Set up .NET Core
+      - name: Set up .NET 8 SDK
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0'
+          dotnet-version: '8.0.x'
 
       - name: Restore dependencies
-        run: dotnet restore ./AmazonAfrica.sln
+        run: dotnet restore AmazonAfrica.sln
 
       - name: Run unit tests
-        run: dotnet test ./AmazonAfrica.sln --no-restore --verbosity normal
+        run: dotnet test AmazonAfrica.sln --no-restore --verbosity normal
 
-      - name: Build project
-        run: dotnet build ./AmazonAfrica.sln --configuration Release --no-restore
+      - name: Build solution
+        run: dotnet build AmazonAfrica.sln --configuration Release --no-restore
 
-      - name: Publish project
-        run: dotnet publish ./src/AmazonAfrica.Api/AmazonAfrica.Api.csproj -c Release -o "${{env.DOTNET_ROOT}}/myapp"
+      - name: Publish API
+        run: |
+          dotnet publish src/AmazonAfrica.Api/AmazonAfrica.Api.csproj `
+            -c Release `
+            -o ${{ env.DOTNET_ROOT }}/myapp
 
-      - name: Upload artifact
+      - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: .net-app
-          path: ${{env.DOTNET_ROOT}}/myapp
+          name: amazonafrica-api
+          path: ${{ env.DOTNET_ROOT }}/myapp
 
   deploy:
+    name: Deploy to Azure App Service (Dev Slot)
     runs-on: windows-latest
     needs: build
     environment:
-      name: 'dev'
+      name: dev
     permissions:
-      id-token: write
       contents: read
 
     steps:
-      - uses: actions/download-artifact@v4
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
         with:
-          name: .net-app
+          name: amazonafrica-api
 
-      - uses: azure/login@v2
+      - name: Azure Login (Service Principal)
+        uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
@@ -62,6 +69,6 @@ jobs:
       - name: Deploy to Azure Web App (Dev Slot)
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'amazonafrica-api'
-          slot-name: 'dev'
-          package: ${{env.DOTNET_ROOT}}/myapp
+          app-name: amazonafrica-api
+          slot-name: dev
+          package: .
