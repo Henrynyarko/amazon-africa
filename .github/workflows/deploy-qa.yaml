@@ -112,7 +112,7 @@ jobs:
     runs-on: windows-latest
     needs: build
     environment:
-      name: dev
+      name: qa
     permissions:
       contents: read
 
