@@ -77,4 +77,4 @@ jobs:
         with:
           app-name: 'amazonafrica-api'
           slot-name: 'dev'
-          package: .
+          package: ./publish 
