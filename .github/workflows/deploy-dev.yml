@@ -107,9 +107,31 @@ jobs:
           name: amazonafrica-api
           path: ./publish
 
-  deploy:
+  migrate:
     runs-on: windows-latest
     needs: build
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0'
+
+      - name: Install EF Core Tools
+        run: dotnet tool install --global dotnet-ef
+
+      - name: Apply EF Core Migrations
+        working-directory: ./src/AmazonAfrica.Api
+        run: dotnet ef database update --context AppDbContext
+
+  deploy:
+    runs-on: windows-latest
+    needs: [build, migrate]
     environment:
       name: dev
     permissions:
@@ -126,20 +148,10 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # --- New EF Core migration steps ---
-      - name: Install dotnet-ef
-        run: dotnet tool install --global dotnet-ef --version 8.0.18
-
-      - name: Add dotnet tools to PATH
-        run: echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
-
-      - name: Apply EF Core Migrations
-        run: dotnet ef database update --project src/AmazonAfrica.Api/AmazonAfrica.Api.csproj --context AppDbContext
-
-      # --- Deploy API to Azure Dev Slot ---
       - name: Deploy to Azure Web App (Dev Slot)
         uses: azure/webapps-deploy@v3
         with:
           app-name: amazonafrica-api
           slot-name: dev
-          package: ./publish
+          package: .
+
