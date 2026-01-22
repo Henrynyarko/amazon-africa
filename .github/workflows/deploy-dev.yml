@@ -84,12 +84,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Cache NuGet packages
-        uses: actions/cache@v3
-        with:
-          path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
-
       - name: Set up .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -126,16 +120,23 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: amazonafrica-api
-          path: ./publish  # Ensures the artifact lands here
 
       - name: Azure Login (Service Principal)
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      # --- New EF Core migration steps ---
+      - name: Install dotnet-ef
+        run: dotnet tool install --global dotnet-ef --version 8.0.18
+
+      - name: Add dotnet tools to PATH
+        run: echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
+
       - name: Apply EF Core Migrations
         run: dotnet ef database update --project src/AmazonAfrica.Api/AmazonAfrica.Api.csproj --context AppDbContext
 
+      # --- Deploy API to Azure Dev Slot ---
       - name: Deploy to Azure Web App (Dev Slot)
         uses: azure/webapps-deploy@v3
         with:
