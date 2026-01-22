@@ -174,33 +174,22 @@ jobs:
       contents: read
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up .NET
+      - uses: actions/checkout@v4
+      - name: Set up .NET Core
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0'
-
-      - name: Restore dependencies
-        run: dotnet restore src/AmazonAfrica.sln
-
       - name: Run unit tests
-        run: dotnet test src/AmazonAfrica.sln --no-restore --verbosity normal
-
-      - name: Build solution
-        run: dotnet build src/AmazonAfrica.sln --configuration Release --no-restore
-
-      - name: Publish API
-        run: dotnet publish src/AmazonAfrica.Api/AmazonAfrica.Api.csproj -c Release -o publish
-
-      - name: Upload build artifact
+        run: dotnet test
+      - name: Build project
+        run: dotnet build --configuration Release
+      - name: Publish project
+        run: dotnet publish -c Release -o "${{env.DOTNET_ROOT}}/myapp"
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: amazonafrica-api
-          path: publish
+          name: .net-app
+          path: ${{env.DOTNET_ROOT}}/myapp
 
   deploy:
     runs-on: windows-latest
@@ -228,4 +217,3 @@ jobs:
           app-name: amazonafrica-api
           slot-name: dev
           package: .
-
