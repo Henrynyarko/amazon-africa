@@ -1,10 +1,9 @@
-namespace AmazonAfrica.Api.Models
+namespace AmazonAfrica.Api.Models;
+
+public class Customer
 {
-    public class Customer
-    {
-        public int Id { get; set; }
-        public string Name { get; set; }
-        public string Email { get; set; }
-        public int LoyaltyPoints { get; set; }
-    }
+    public int Id { get; set; }
+    public string Name { get; set; } = null!;
+    public string Email { get; set; } = null!;
+    public int LoyaltyPoints { get; set; }
 }

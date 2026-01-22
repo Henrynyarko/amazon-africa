@@ -1,24 +1,23 @@
-using Microsoft.EntityFrameworkCore;
 using AmazonAfrica.Api.Models;
+using Microsoft.EntityFrameworkCore;
 
-namespace AmazonAfrica.Api.Data
+namespace AmazonAfrica.Api.Data;
+
+public class AppDbContext : DbContext
 {
-    public class AppDbContext : DbContext
+    private readonly string _schema;
+
+    public AppDbContext(DbContextOptions<AppDbContext> options, string schema = "amazonafrica")
+        : base(options)
     {
-        private readonly string _schema;
+        _schema = schema;
+    }
 
-        public AppDbContext(DbContextOptions<AppDbContext> options, string schema = "amazonafrica") 
-            : base(options) 
-        {
-            _schema = schema;
-        }
+    public DbSet<Customer> Customers { get; set; } = null!;
 
-        public DbSet<Customer> Customers { get; set; }
-
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            modelBuilder.HasDefaultSchema(_schema);
-            base.OnModelCreating(modelBuilder);
-        }
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.HasDefaultSchema(_schema);
+        base.OnModelCreating(modelBuilder);
     }
 }

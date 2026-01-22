@@ -1,3 +1,10 @@
+using AmazonAfrica.Api.Data;
+using AmazonAfrica.Api.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+
+namespace AmazonAfrica.Api.Controllers;
+
 [ApiController]
 [Route("api/[controller]")]
 public class CustomerController : ControllerBase
@@ -9,7 +16,6 @@ public class CustomerController : ControllerBase
         _context = context;
     }
 
-    // Existing GET endpoints
     [HttpGet]
     public async Task<IActionResult> GetAllCustomers()
     {
@@ -27,7 +33,6 @@ public class CustomerController : ControllerBase
         return Ok(customer);
     }
 
-    // NEW: Add a customer
     [HttpPost]
     public async Task<IActionResult> AddCustomer([FromBody] Customer customer)
     {
@@ -36,7 +41,6 @@ public class CustomerController : ControllerBase
         return CreatedAtAction(nameof(GetCustomerById), new { id = customer.Id }, customer);
     }
 
-    // NEW: Update an existing customer
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateCustomer(int id, [FromBody] Customer customer)
     {
