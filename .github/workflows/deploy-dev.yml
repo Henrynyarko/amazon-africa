@@ -90,16 +90,20 @@ jobs:
           dotnet-version: '8.0'
 
       - name: Restore dependencies
-        run: dotnet restore AmazonAfrica.sln
+        working-directory: ./src/AmazonAfrica.Api
+        run: dotnet restore --no-cache
 
       - name: Run unit tests
-        run: dotnet test AmazonAfrica.sln --no-restore --verbosity normal
+        working-directory: ./src/AmazonAfrica.Api
+        run: dotnet test --no-restore --verbosity normal
 
       - name: Build solution
-        run: dotnet build AmazonAfrica.sln --configuration Release --no-restore
+        working-directory: ./src/AmazonAfrica.Api
+        run: dotnet build -c Release --no-restore
 
       - name: Publish API
-        run: dotnet publish src/AmazonAfrica.Api/AmazonAfrica.Api.csproj -c Release -o ./publish
+        working-directory: ./src/AmazonAfrica.Api
+        run: dotnet publish -c Release -o ../../publish
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
@@ -127,7 +131,7 @@ jobs:
 
       - name: Apply EF Core Migrations
         working-directory: ./src/AmazonAfrica.Api
-        run: dotnet ef database update --context AppDbContext
+        run: dotnet restore --no-cache && dotnet build && dotnet ef database update --context AppDbContext
 
   deploy:
     runs-on: windows-latest
