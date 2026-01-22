@@ -1,3 +1,71 @@
+# name: Build & Deploy AmazonAfrica.API - Dev
+
+# on:
+#   push:
+#     branches:
+#       - dev
+#   workflow_dispatch:
+
+# jobs:
+#   build:
+#     runs-on: windows-latest
+#     permissions:
+#       contents: read
+
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
+
+#       - name: Set up .NET
+#         uses: actions/setup-dotnet@v4
+#         with:
+#           dotnet-version: '8.0'
+
+#       - name: Restore dependencies
+#         run: dotnet restore AmazonAfrica.sln
+
+#       - name: Run unit tests
+#         run: dotnet test AmazonAfrica.sln --no-restore --verbosity normal
+
+#       - name: Build solution
+#         run: dotnet build AmazonAfrica.sln --configuration Release --no-restore
+
+#       - name: Publish API
+#         run: dotnet publish src/AmazonAfrica.Api/AmazonAfrica.Api.csproj -c Release -o ./publish
+
+#       - name: Upload build artifact
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: amazonafrica-api
+#           path: ./publish
+
+#   deploy:
+#     runs-on: windows-latest
+#     needs: build
+#     environment:
+#       name: dev
+#     permissions:
+#       contents: read
+
+#     steps:
+#       - name: Download artifact
+#         uses: actions/download-artifact@v4
+#         with:
+#           name: amazonafrica-api
+
+#       - name: Azure Login (Service Principal)
+#         uses: azure/login@v2
+#         with:
+#           creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+#       - name: Deploy to Azure Web App (Dev Slot)
+#         uses: azure/webapps-deploy@v3
+#         with:
+#           app-name: amazonafrica-api
+#           slot-name: dev
+#           package: .
+
+
 name: Build & Deploy AmazonAfrica.API - Dev
 
 on:
@@ -15,6 +83,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
 
       - name: Set up .NET
         uses: actions/setup-dotnet@v4
@@ -52,15 +126,19 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: amazonafrica-api
+          path: ./publish  # Ensures the artifact lands here
 
       - name: Azure Login (Service Principal)
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: Apply EF Core Migrations
+        run: dotnet ef database update --project src/AmazonAfrica.Api/AmazonAfrica.Api.csproj --context AppDbContext
+
       - name: Deploy to Azure Web App (Dev Slot)
         uses: azure/webapps-deploy@v3
         with:
           app-name: amazonafrica-api
           slot-name: dev
-          package: .
+          package: ./publish
