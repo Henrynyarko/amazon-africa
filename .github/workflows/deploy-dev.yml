@@ -1,4 +1,4 @@
-name: Build & Deploy AmazonAfrica.API - Dev
+name: CI/CD – AmazonAfrica API (Dev)
 
 on:
   push:
@@ -6,75 +6,110 @@ on:
       - dev
   workflow_dispatch:
 
+permissions:
+  contents: read
+  id-token: write
+  security-events: write
+
 jobs:
+  
   build:
+    name: Build & Test
     runs-on: windows-latest
-    permissions:
-      contents: read
 
     steps:
-      # 1️⃣ Checkout the repo
-      - name: Checkout code
+      - name: Checkout source
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # 2️⃣ Setup .NET 8
-      - name: Set up .NET
+      - name: Setup .NET 8
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0'
+          dotnet-version: 8.0.x
 
-      # 3️⃣ Restore dependencies
       - name: Restore dependencies
         run: dotnet restore AmazonAfrica.sln
 
-      # 4️⃣ Run unit tests
-      - name: Run unit tests
-        run: dotnet test AmazonAfrica.sln --no-restore --verbosity normal
+      - name: Run unit tests with coverage
+        run: |
+          dotnet test AmazonAfrica.sln `
+            --no-restore `
+            --collect:"XPlat Code Coverage" `
+            --results-directory ./coverage
 
-      # 5️⃣ Build solution
       - name: Build solution
         run: dotnet build AmazonAfrica.sln --configuration Release --no-restore
 
-      # 6️⃣ Publish API project
       - name: Publish API
         run: dotnet publish src/AmazonAfrica.Api/AmazonAfrica.Api.csproj -c Release -o ./publish
 
-      # 7️⃣ Upload build artifact
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: amazonafrica-api
           path: ./publish
 
-  deploy:
-    runs-on: windows-latest
+      - name: Upload test coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-coverage
+          path: ./coverage
+
+
+  security:
+    name: Static Security Analysis (CodeQL)
+    runs-on: ubuntu-latest
     needs: build
-    environment:
-      name: dev
-    permissions:
-      contents: read
-      id-token: write
 
     steps:
-      # 1️⃣ Download the published artifact
-      - name: Download artifact
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: csharp
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Run CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+  # -------------------------
+  # 3. DEPLOY (DEV)
+  # -------------------------
+  deploy:
+    name: Deploy to Azure (Dev)
+    runs-on: windows-latest
+    needs: security
+    environment:
+      name: dev
+
+    steps:
+      - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
           name: amazonafrica-api
           path: ./publish
 
-      # 2️⃣ Azure login using Service Principal
-      - name: Azure Login
+      
+      - name: Azure Login (OIDC)
         uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      # 3️⃣ Deploy to Dev slot
       - name: Deploy to Azure Web App (Dev Slot)
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'amazonafrica-api'
-          slot-name: 'dev'
-          package: ./publish 
+          app-name: amazonafrica-api
+          slot-name: dev
+          package: ./publish
+
+      
+      - name: Smoke test API
+        run: |
+          curl -f https://amazonafrica-api-dev.azurewebsites.net/health || exit 1
