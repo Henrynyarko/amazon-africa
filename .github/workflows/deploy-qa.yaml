@@ -1,139 +1,4 @@
-# # name: Build & Deploy AmazonAfrica.API - Dev
-
-# # on:
-# #   push:
-# #     branches:
-# #       - qa
-# #   workflow_dispatch:
-
-# # jobs:
-# #   build:
-# #     runs-on: windows-latest
-# #     permissions:
-# #       contents: read
-
-# #     steps:
-# #       - name: Checkout code
-# #         uses: actions/checkout@v4
-
-# #       - name: Set up .NET
-# #         uses: actions/setup-dotnet@v4
-# #         with:
-# #           dotnet-version: '8.0'
-
-# #       - name: Restore dependencies
-# #         run: dotnet restore AmazonAfrica.sln
-
-# #       - name: Run unit tests
-# #         run: dotnet test AmazonAfrica.sln --no-restore --verbosity normal
-
-# #       - name: Build solution
-# #         run: dotnet build AmazonAfrica.sln --configuration Release --no-restore
-
-# #       - name: Publish API
-# #         run: dotnet publish src/AmazonAfrica.Api/AmazonAfrica.Api.csproj -c Release -o ./publish
-
-# #       - name: Upload build artifact
-# #         uses: actions/upload-artifact@v4
-# #         with:
-# #           name: amazonafrica-api
-# #           path: ./publish
-
-# #   deploy:
-# #     runs-on: windows-latest
-# #     needs: build
-# #     environment:
-# #       name: dev
-# #     permissions:
-# #       contents: read
-
-# #     steps:
-# #       - name: Download artifact
-# #         uses: actions/download-artifact@v4
-# #         with:
-# #           name: amazonafrica-api
-
-# #       - name: Azure Login (Service Principal)
-# #         uses: azure/login@v2
-# #         with:
-# #           creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-# #       - name: Deploy to Azure Web App (Dev Slot)
-# #         uses: azure/webapps-deploy@v3
-# #         with:
-# #           app-name: amazonafrica-api
-# #           slot-name: qa
-# #           package: .
-
-# name: Build & Deploy AmazonAfrica.API - Dev
-
-# on:
-#   push:
-#     branches:
-#       - qa
-#   workflow_dispatch:
-
-# jobs:
-#   build:
-#     runs-on: windows-latest
-#     permissions:
-#       contents: read
-
-#     steps:
-#       - name: Checkout code
-#         uses: actions/checkout@v4
-#         with:
-#           fetch-depth: 0
-
-#       - name: Set up .NET
-#         uses: actions/setup-dotnet@v4
-#         with:
-#           dotnet-version: '8.0'
-
-#       - name: Restore dependencies
-#         run: dotnet restore src/AmazonAfrica.sln
-
-#       - name: Run unit tests
-#         run: dotnet test src/AmazonAfrica.sln --no-restore --verbosity normal
-
-#       - name: Build solution
-#         run: dotnet build src/AmazonAfrica.sln --configuration Release --no-restore
-
-#       - name: Publish API
-#         run: dotnet publish src/AmazonAfrica.Api/AmazonAfrica.Api.csproj -c Release -o ./publish
-
-#       - name: Upload build artifact
-#         uses: actions/upload-artifact@v4
-#         with:
-#           name: amazonafrica-api
-#           path: ./publish
-
-#   deploy:
-#     runs-on: windows-latest
-#     needs: build
-#     environment:
-#       name: qa
-#     permissions:
-#       contents: read
-
-#     steps:
-#       - name: Download artifact
-#         uses: actions/download-artifact@v4
-#         with:
-#           name: amazonafrica-api
-
-#       - name: Azure Login (Service Principal)
-#         uses: azure/login@v2
-#         with:
-#           creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-#       - name: Deploy to Azure Web App (qa Slot)
-#         uses: azure/webapps-deploy@v3
-#         with:
-#           app-name: amazonafrica-api
-#           slot-name: qa
-
-name: Build & Deploy AmazonAfrica.API - QA
+name: CI/CD – AmazonAfrica API (QA)
 
 on:
   push:
@@ -141,66 +6,108 @@ on:
       - qa
   workflow_dispatch:
 
+permissions:
+  contents: read
+  id-token: write
+  security-events: write
+
 jobs:
+ 
   build:
+    name: Build & Test
     runs-on: windows-latest
-    permissions:
-      contents: read
 
     steps:
-      - name: Checkout code
+      - name: Checkout source
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Set up .NET
+      - name: Setup .NET 8
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0'
+          dotnet-version: 8.0.x
 
       - name: Restore dependencies
-        run: dotnet restore src/AmazonAfrica.sln
+        run: dotnet restore AmazonAfrica.sln
 
-      - name: Run unit tests
-        run: dotnet test src/AmazonAfrica.sln --no-restore --verbosity normal
+      - name: Run unit tests with coverage
+        run: |
+          dotnet test AmazonAfrica.sln `
+            --no-restore `
+            --collect:"XPlat Code Coverage" `
+            --results-directory ./coverage
 
       - name: Build solution
-        run: dotnet build src/AmazonAfrica.sln --configuration Release --no-restore
+        run: dotnet build AmazonAfrica.sln --configuration Release --no-restore
 
       - name: Publish API
-        run: dotnet publish src/AmazonAfrica.Api/AmazonAfrica.Api.csproj -c Release -o publish
+        run: dotnet publish src/AmazonAfrica.Api/AmazonAfrica.Api.csproj -c Release -o ./publish
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: amazonafrica-api
-          path: publish
+          path: ./publish
 
-  deploy:
-    runs-on: windows-latest
+      - name: Upload test coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-coverage
+          path: ./coverage
+
+  
+  security:
+    name: Static Security Analysis (CodeQL)
+    runs-on: ubuntu-latest
     needs: build
-    environment:
-      name: qa
-    permissions:
-      contents: read
 
     steps:
-      - name: Download artifact
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: csharp
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Run CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+  
+  deploy:
+    name: Deploy to Azure (QA)
+    runs-on: windows-latest
+    needs: security
+    environment:
+      name: qa   # enforce manual approval in GitHub
+
+    steps:
+      - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
           name: amazonafrica-api
-          path: .
+          path: ./publish
 
-      - name: Azure Login (Service Principal)
+      # OIDC login (NO client secret)
+      - name: Azure Login (OIDC)
         uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Deploy to Azure Web App (QA Slot)
         uses: azure/webapps-deploy@v3
         with:
           app-name: amazonafrica-api
           slot-name: qa
-          package: .
+          package: ./publish
 
-          
+     
+      - name: Smoke test API
+        run: |
+          curl -f https://amazonafrica-api-qa.azurewebsites.net/health || exit 1
