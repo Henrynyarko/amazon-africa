@@ -1,4 +1,4 @@
-name: Build & Deploy AmazonAfrica.API - Production
+name: CI/CD – AmazonAfrica API (Production)
 
 on:
   push:
@@ -6,54 +6,137 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: read
+  id-token: write
+  security-events: write
+
 jobs:
+  
   build:
+    name: Build & Test
     runs-on: windows-latest
-    permissions:
-      contents: read
 
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up .NET Core
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET 8
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0'
-      - name: Run unit tests
-        run: dotnet test
-      - name: Build project
-        run: dotnet build --configuration Release
-      - name: Publish project
-        run: dotnet publish -c Release -o "${{env.DOTNET_ROOT}}/myapp"
-      - name: Upload artifact
+          dotnet-version: 8.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore AmazonAfrica.sln
+
+      - name: Run unit tests with coverage
+        run: |
+          dotnet test AmazonAfrica.sln `
+            --no-restore `
+            --collect:"XPlat Code Coverage" `
+            --results-directory ./coverage
+
+      - name: Build solution
+        run: dotnet build AmazonAfrica.sln --configuration Release --no-restore
+
+      - name: Publish API
+        run: dotnet publish src/AmazonAfrica.Api/AmazonAfrica.Api.csproj -c Release -o ./publish
+
+      - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: .net-app
-          path: ${{env.DOTNET_ROOT}}/myapp
+          name: amazonafrica-api
+          path: ./publish
 
-  deploy:
-    runs-on: windows-latest
+      - name: Upload test coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-coverage
+          path: ./coverage
+
+
+  security:
+    name: Static Security Analysis (CodeQL)
+    runs-on: ubuntu-latest
     needs: build
-    environment:
-      name: 'production'
-    permissions:
-      id-token: write
-      contents: read
 
     steps:
-      - uses: actions/download-artifact@v4
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
         with:
-          name: .net-app
-      - uses: azure/login@v2
+          languages: csharp
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Run CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+  # -------------------------
+  # 3. DEPLOY TO STAGING SLOT
+  # -------------------------
+  deploy-staging:
+    name: Deploy to Staging Slot
+    runs-on: windows-latest
+    needs: security
+    environment:
+      name: production   # enforce manual approval
+
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: amazonafrica-api
+          path: ./publish
+
+      # OIDC-based login (NO secrets)
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
-                
-      - name: Deploy to Azure Web App (Production Slot)
+
+      - name: Deploy to Staging Slot
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'amazonafrica-api'
-          slot-name: ''  # Production main slot
-          package: .
-x
+          app-name: amazonafrica-api
+          slot-name: staging
+          package: ./publish
+
+      - name: Smoke test (staging)
+        run: |
+          curl -f https://amazonafrica-api-staging.azurewebsites.net/health || exit 1
+
+  
+  swap-to-production:
+    name: Swap Staging → Production
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    environment:
+      name: production   # second approval gate (recommended)
+
+    steps:
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Swap slots
+        run: |
+          az webapp deployment slot swap \
+            --resource-group amazonafrica-rg \
+            --name amazonafrica-api \
+            --slot staging \
+            --target-slot production
+
+      - name: Smoke test (production)
+        run: |
+          curl -f https://amazonafrica-api.azurewebsites.net/health || exit 1
